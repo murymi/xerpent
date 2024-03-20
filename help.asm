@@ -5,6 +5,12 @@ struc Food
     .y:          resd  1
 endstruc
 
+struc Snake
+    .x:         resd 1
+    .y:         resd 1
+    .nxt:       resq 1
+endstruc
+
 
 %macro __syscall 1
     push r11
@@ -223,6 +229,51 @@ txt_fmt: db "%i", 0
     add rsp, 32
 %endmacro
 
+%macro __get_random_value 2
+    mov rdi, %1
+    mov rsi, %2
+    call GetRandomValue
+%endmacro
+
+%macro __mem_alloc 1
+    mov rdi, %1
+    call MemAlloc
+%endmacro
+
+%macro __mem_free 1
+    mov rdi, %1
+    call MemFree
+%endmacro
+
+%macro __draw_rec_round 7
+    sub rsp, 32
+
+    cvtsi2ss xmm0, %1 ;x
+    movss dword[rsp], xmm0
+
+    cvtsi2ss xmm0, %2 ;y
+    movss dword[rsp+4], xmm0
+
+    cvtsi2ss xmm0, %3 ;width
+    movss dword[rsp+8], xmm0
+
+    cvtsi2ss xmm0, %4 ; height
+    movss dword[rsp+12], xmm0
+
+    movq xmm0, qword[rsp]
+    movq xmm1, qword[rsp+8]
+
+    section .data
+    %%fuck: dd %5
+    section .text
+    movss xmm2, dword[%%fuck]
+
+    mov edi, %6
+    mov esi, %7
+    call DrawRectangleRounded
+    add rsp, 32
+%endmacro
+
 %define void 0
 %define KEY_DOWN 265
 %define KEY_UP 264
@@ -245,7 +296,10 @@ txt_fmt: db "%i", 0
 %define load_texture_from_image(a, b)     __load_texture_from_image a, b
 %define unload_image(a)             __unload_image a
 %define draw_texture(a, b, c ,d)    __draw_texture a, b, c, d
-
+%define get_random_value(a, b)      __get_random_value a, b
+%define mem_alloc(a)                __mem_alloc a
+%define mem_free(a)                 __mem_free a
+%define draw_rectangle_rounded(a,b,c,d,e,f,g) __draw_rec_round a,b,c,d,e,f,g
 
 extern InitWindow
 extern CloseWindow
@@ -266,6 +320,10 @@ extern LoadImage
 extern LoadTextureFromImage
 extern UnloadImage
 extern DrawTexture
+extern GetRandomValue
+extern MemAlloc
+extern MemFree
+extern DrawRectangleRounded
 
 ;If the size of the structure, in bytes, is ≤ 8, 
 ;then the the entire structure 
