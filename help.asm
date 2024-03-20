@@ -337,3 +337,40 @@ extern DrawRectangleRounded
 ;0   1  3  2
 
 ;3210FEDC FEDCBA98 76543210 01234567
+
+%macro __snake_push_back 3
+    mov rdi, %1
+    mov rsi, %2
+    mov rdx, %3
+    call PushBackSnake
+%endmacro
+
+%macro __create_snake 3
+    mov rdi, %2
+    mov rsi, %3
+    call InitBody
+    mov %1, rax
+%endmacro
+
+%macro __print_snake 1
+    mov rdi, %1
+    call PrintSnake
+%endmacro
+
+%macro __pop_back_snake 1
+    mov rdi, %1
+    call PopBackSnake
+%endmacro
+
+%macro __push_front_snake 3
+    mov rdi, %1
+    mov rsi, %2
+    mov rdx, %3
+    call PushFrontSnake
+%endmacro
+
+%define push_back_snake(a, b, c)    __snake_push_back a, b , c 
+%define create_snake(a, b, c)          __create_snake a, b, c
+%define print_snake(a)              __print_snake a
+%define pop_back_snake(a)           __pop_back_snake a
+%define push_front_snake(a, b, c)   __push_front_snake a, b, c

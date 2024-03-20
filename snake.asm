@@ -8,6 +8,7 @@ screen_width:  equ 750
 
 green:      db 173, 204, 96, 255
 dark_green: db 43, 51, 24, 255
+pfmt: db "x = %d, y = %d",10, 0 
 
 cell_size:  equ 25
 cell_count: equ 25
@@ -16,6 +17,9 @@ food: istruc Food
     at Food.x, dd 5
     at Food.y, dd 6
 iend 
+
+direction_x: dd 1
+direction_y: dd 0
 
 
 section .bss
@@ -26,6 +30,24 @@ head: resq 1
 section .text
 global _start
 _start:
+
+    create_snake(qword[head], 1, 1)
+
+    push_back_snake(qword[head], 1, 2)
+    push_back_snake(qword[head], 1, 3)
+    push_back_snake(qword[head], 1, 4)
+
+    pop_back_snake(qword[head])
+    ;pop_back_snake(qword[head])
+    ;pop_back_snake(qword[head])
+    ;pop_back_snake(qword[head])
+
+
+    ;push_front_snake(qword[head], 9, 3)
+
+
+    ;sys_exit(0)
+
     init_window(cell_size*cell_count, cell_size*cell_count, title)
     set_target_fps(60)
 
@@ -38,7 +60,6 @@ _start:
     get_random_value(0, cell_count - 1)
     mov dword[food+Food.y], eax
 
-    call InitSnake
 
 .gloop:
 
@@ -47,11 +68,19 @@ _start:
     jne .endgloop
     begin_drawing()
 
+    mov rdi, qword[head]
+    call UpdateSnake
+
     clear_background(dword[green])
 
     call DrawFood
 
+    mov rdi, qword[head]
     call DrawSnake
+
+
+    print_snake(qword[head])
+
 
     ;sys_exit(1)
 
@@ -73,50 +102,28 @@ DrawFood:
     ;draw_texture(food_texture, ecx, eax, 0xffffffff)
     end 0
 
-InitSnake:
+
+InitBody:
     begin
-    mov rcx, 3
-    sub rsp, 8
-    mov qword[rsp], head
-.L1:
-    push rcx
+    push rdi
+    push rsi
     mem_alloc(Snake_size)
-    pop rcx
-
-    mov rdx, qword[rsp]
-    mov qword[rdx], rax
-
-    mov dword[rax+Snake.x], ecx
-    mov dword[rax+Snake.y], 9
+    pop rsi
+    pop rdi
+    mov dword[rax+Snake.x], edi
+    mov dword[rax+Snake.y], esi
     mov qword[rax+Snake.nxt], 0
+    end rax
 
-    lea rdx, qword[rax+Snake.nxt]
-
-    ;mov r15d, dword[rax+Snake.x]
-    ;mov r15d, dword[rax+Snake.y]
-    ;mov r15, qword[rax+Snake.nxt]
-
-    mov qword[rsp], rdx
-
-    loop .L1
-    end 0
-
+;; rdi
 DrawSnake:
     begin
-    mov rcx, qword[head]
+    mov rcx, rdi
+    cmp rcx, 0
+    je .L3
     push r15
     push r14
-
-    ;mov r15d, dword[rcx+Snake.x]
-    ;mov r15d, dword[rcx+Snake.y]
-    ;mov r15, qword[rcx+Snake.nxt]
 .L1:
-
-    mov r15d, dword[rcx+Snake.x]
-    mov r15d, dword[rcx+Snake.y]
-    mov r15, qword[rcx+Snake.nxt]
-    
-
     mov eax, dword[rcx+Snake.x]
     mul_i32(eax, cell_size)
     mov r15, rax
@@ -136,6 +143,92 @@ DrawSnake:
 .L2:
     pop r14
     pop r15
+.L3
+    end 0
+
+PopBackSnake:
+    begin
+    cmp rdi, 0 ;ptr
+    je .Ext
+    cmp qword[rdi+Snake.nxt], 0
+    je .Ext
+    mov rcx, rdi
+.L1
+    mov rax, qword[rcx+Snake.nxt]
+    cmp qword[rax+Snake.nxt], 0
+    je .Del
+    mov rcx, qword[rcx+Snake.nxt]
+    jmp .L1
+.Del:
+    push rcx
+    mem_free(qword[rcx+Snake.nxt])
+    pop rcx
+    mov qword[rcx+Snake.nxt], 0
+.Ext:
+    end 0
+
+;; rdi
+PushBackSnake:
+    begin
+    cmp rdi, 0
+    je .L3
+.L1:
+    cmp qword[rdi+Snake.nxt], 0
+    je .L2
+    mov rdi, qword[rdi+Snake.nxt]
+    jmp .L1
+.L2:
+    push rdi
+    mov rdi, rsi
+    mov rsi, rdx
+    call InitBody
+    pop rdi
+    mov qword[rdi+Snake.nxt], rax
+    end rax
+.L3
+    end 0
+
+PrintSnake:
+    begin
+    push 0
+.L1
+    cmp rdi, 0
+    je .Ext
+    mov esi, dword[rdi+Snake.x]
+    mov edx, dword[rdi+Snake.y]
+    push rdi
+    mov rdi, pfmt
+    extern printf
+    call printf
+    pop rdi
+    mov rdi, [rdi+Snake.nxt]
+    jmp .L1
+.Ext:
+    end 0
+
+PushFrontSnake:
+    begin
+    push rdi
+    mov rdi, rsi
+    mov rsi, rdx
+    call InitBody 
+
+    pop rdi
+
+    mov qword[rax+Snake.nxt], rdi
+    mov qword[head], rax
+    end 0
+
+UpdateSnake:
+    begin
+    push rdi
+    pop_back_snake(rdi)
+    pop rdi
+    mov ecx, dword[rdi+Snake.x]
+    add ecx, dword[direction_x]
+    mov eax, dword[rdi+Snake.y]
+    add eax, dword[direction_y]
+    push_front_snake(rdi, rcx, rax)
     end 0
 
 section '.note.GNU-stack'
