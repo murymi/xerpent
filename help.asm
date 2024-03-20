@@ -1,20 +1,10 @@
 section .data
 
-struc Ball
+struc Food
     .x:          resd  1
     .y:          resd  1
-    .speed_x:    resd  1
-    .speed_y:    resd  1
-    .radius:     resd  1
 endstruc
 
-struc Paddle
-    .x:          resd 1
-    .y:          resd 1
-    .width:      resd 1
-    .height:     resd 1
-    .speed:      resd 1
-endstruc
 
 %macro __syscall 1
     push r11
@@ -60,6 +50,13 @@ endstruc
     mov rax, %1
     __stack_pop
 %endmacro
+
+%macro __mul_i32 2
+    mov eax, %1
+    imul rax, %2
+%endmacro
+
+%define mul_i32(a, b) __mul_i32 a, b
 
 %macro __init_window 3
     mov rdi, %1
@@ -108,7 +105,7 @@ endstruc
 %endmacro
 
 %macro __clear_bg 1
-    mov rdi, %1
+    mov edi, %1
     call ClearBackground
 %endmacro
 
@@ -176,6 +173,55 @@ txt_fmt: db "%i", 0
     call TextFormat
 %endmacro
 
+%macro __load_image 2
+    mov rdi, %2
+    mov rsi, %1
+    call LoadImage
+%endmacro
+
+%macro __load_texture_from_image 2
+    mov rdi, %2
+    sub rsp, 8
+    push qword[%1+16]
+    push qword[%1+8]
+    push qword[%1]
+    ;sub rsp, 
+    ;mov rsi, %1
+    call LoadTextureFromImage
+
+    add rsp, 32
+
+%endmacro
+
+%macro __unload_image 1
+    push 0;qword[%1+16]
+    push 0;qword[%1+8]
+    push 0;qword[%1]
+    call UnloadImage
+    add rsp, 24
+%endmacro
+
+%macro __draw_texture 4
+    sub rsp, 32
+
+    mov edi, %2
+    mov esi, %3
+    mov edx, %4
+
+    mov rax, qword[%1]
+    mov qword[rsp], rax
+
+
+    mov rax, qword[%1+8]
+    mov qword[rsp+8], rax
+
+
+    mov eax, dword[%1+16]
+    mov dword[rsp+16], eax
+
+    call DrawTexture
+    add rsp, 32
+%endmacro
 
 %define void 0
 %define KEY_DOWN 265
@@ -195,6 +241,11 @@ txt_fmt: db "%i", 0
 %define check_collision_circle_rec(a,b,c,d,e,f,g) __check_colCR a,b,c,d,e,f,g
 %define draw_text(a, b, c, d, e)       __draw_text a, b, c, d, e
 %define text_fmt(a)                 __text_fmt a
+%define load_image(a, b)            __load_image a, b
+%define load_texture_from_image(a, b)     __load_texture_from_image a, b
+%define unload_image(a)             __unload_image a
+%define draw_texture(a, b, c ,d)    __draw_texture a, b, c, d
+
 
 extern InitWindow
 extern CloseWindow
@@ -211,6 +262,10 @@ extern IsKeyDown
 extern CheckCollisionCircleRec
 extern DrawText
 extern TextFormat
+extern LoadImage
+extern LoadTextureFromImage
+extern UnloadImage
+extern DrawTexture
 
 ;If the size of the structure, in bytes, is ≤ 8, 
 ;then the the entire structure 
