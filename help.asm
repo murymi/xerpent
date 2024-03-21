@@ -274,6 +274,10 @@ txt_fmt: db "%i", 0
     add rsp, 32
 %endmacro
 
+%macro __get_time 0
+    call GetTime
+%endmacro
+
 %define void 0
 %define KEY_DOWN 265
 %define KEY_UP 264
@@ -300,6 +304,7 @@ txt_fmt: db "%i", 0
 %define mem_alloc(a)                __mem_alloc a
 %define mem_free(a)                 __mem_free a
 %define draw_rectangle_rounded(a,b,c,d,e,f,g) __draw_rec_round a,b,c,d,e,f,g
+%define get_time(a)                 __get_time
 
 extern InitWindow
 extern CloseWindow
@@ -324,6 +329,7 @@ extern GetRandomValue
 extern MemAlloc
 extern MemFree
 extern DrawRectangleRounded
+extern GetTime
 
 ;If the size of the structure, in bytes, is ≤ 8, 
 ;then the the entire structure 

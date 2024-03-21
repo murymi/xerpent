@@ -10,6 +10,9 @@ green:      db 173, 204, 96, 255
 dark_green: db 43, 51, 24, 255
 pfmt: db "x = %d, y = %d",10, 0 
 
+last_update_time: dq 0.0
+interval: dq 0.2
+
 cell_size:  equ 25
 cell_count: equ 25
 
@@ -68,9 +71,12 @@ _start:
     jne .endgloop
     begin_drawing()
 
+    call EventTriggered
+    cmp rax, 1
+    jne .L1
     mov rdi, qword[head]
     call UpdateSnake
-
+.L1:
     clear_background(dword[green])
 
     call DrawFood
@@ -229,6 +235,23 @@ UpdateSnake:
     mov eax, dword[rdi+Snake.y]
     add eax, dword[direction_y]
     push_front_snake(rdi, rcx, rax)
+    end 0
+
+EventTriggered:
+    begin
+    get_time()
+    subsd xmm0, qword[interval]
+    ucomisd xmm0, qword[last_update_time]
+    jb .L1
+    addsd xmm0, qword[interval] 
+    movsd qword[last_update_time], xmm0
+    end 1
+.L1:
+    end 0
+
+UpdateDirection:
+    begin
+    
     end 0
 
 section '.note.GNU-stack'
