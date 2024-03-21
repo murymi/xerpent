@@ -25,6 +25,9 @@ direction_x: dd 1
 direction_y: dd 0
 
 add_segment: dd 0
+score: dd 0
+
+running: dd 1
 
 one: dd 1
 negone: dd -1
@@ -73,6 +76,9 @@ _start:
     jne .endgloop
     begin_drawing()
 
+    cmp dword[running], 1
+    jne .L3
+
     call EventTriggered
     cmp rax, 1
     jne .L1
@@ -83,6 +89,7 @@ _start:
     call CheckCollisionWithFood
     cmp rax, 1
     jne .L2
+    inc dword[score]
     call RandoMizeFood
     mov dword[add_segment], 1
     ;push_back_snake(qword[head])
@@ -91,8 +98,10 @@ _start:
     call CheckCollisionWithEdges
     cmp rax, 1
     jne .L3
+
+    call GameOver
     ;sys_exit(0)
-.L3
+.L3:
 
     call UpdateDirection
 
@@ -108,7 +117,6 @@ _start:
 
 
     ;sys_exit(1)
-
     end_drawing()
     jmp .gloop
 
@@ -280,6 +288,7 @@ UpdateDirection:
     is_key_pressed(KEY_UP)
     cmp rax, 1
     jne .L1
+    mov dword[running], 1
     cmp dword[direction_y], -1
     je .L1
     mov dword[direction_y],1
@@ -288,6 +297,7 @@ UpdateDirection:
     is_key_pressed(KEY_DOWN)
     cmp rax, 1
     jne .L2
+    mov dword[running], 1
     cmp dword[direction_y], 1
     je .L2
     mov dword[direction_y], -1
@@ -296,6 +306,7 @@ UpdateDirection:
     is_key_pressed(KEY_LEFT)
     cmp rax, 1
     jne .L3
+    mov dword[running], 1
     cmp dword[direction_x], 1
     je .L3
     mov dword[direction_x], -1
@@ -305,6 +316,7 @@ UpdateDirection:
     is_key_pressed(KEY_RIGHT)
     cmp rax, 1
     jne .L4
+    mov dword[running], 1
     cmp dword[direction_x], -1
     je .L4
     mov dword[direction_x], 1
@@ -382,6 +394,32 @@ CheckCollisionWithEdges:
     end 0
 .L1
     end 1
+
+ResetSnake:
+    begin
+    mov ecx, dword[score]
+    add ecx, 3
+.L1:
+    push rcx
+    pop_back_snake(qword[head])
+    pop rcx
+    loop .L1
+    mov rax, qword[head]
+    mov dword[rax+Snake.x], 1
+    mov dword[rax+Snake.y], 1
+    push_back_snake(qword[head], 1, 2)
+    push_back_snake(qword[head], 1, 3)
+
+    mov dword[direction_x], 1
+    mov dword[direction_y], 0
+    end 0
+
+GameOver:
+    begin
+    call ResetSnake
+    call RandoMizeFood
+    mov dword[running], 0
+    end 0
 
 section '.note.GNU-stack'
 
