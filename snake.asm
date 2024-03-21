@@ -24,6 +24,8 @@ iend
 direction_x: dd 1
 direction_y: dd 0
 
+add_segment: dd 0
+
 one: dd 1
 negone: dd -1
 
@@ -61,11 +63,8 @@ _start:
     ;load_texture_from_image(food_image, food_texture)
 
     ;unload_image(food_image)
-    get_random_value(0, cell_count - 1)
-    mov dword[food+Food.x], eax
-    get_random_value(0, cell_count - 1)
-    mov dword[food+Food.y], eax
 
+    call RandoMizeFood
 
 .gloop:
 
@@ -80,6 +79,20 @@ _start:
     mov rdi, qword[head]
     call UpdateSnake
 .L1:
+
+    call CheckCollisionWithFood
+    cmp rax, 1
+    jne .L2
+    call RandoMizeFood
+    mov dword[add_segment], 1
+    ;push_back_snake(qword[head])
+.L2:
+
+    call CheckCollisionWithEdges
+    cmp rax, 1
+    jne .L3
+    ;sys_exit(0)
+.L3
 
     call UpdateDirection
 
@@ -234,7 +247,14 @@ PushFrontSnake:
 UpdateSnake:
     begin
     push rdi
+
+    cmp dword[add_segment], 1
+    jne .L1
+    mov dword[add_segment], 0
+    jmp .L2
+.L1:
     pop_back_snake(rdi)
+.L2:
     pop rdi
     mov ecx, dword[rdi+Snake.x]
     add ecx, dword[direction_x]
@@ -260,18 +280,24 @@ UpdateDirection:
     is_key_pressed(KEY_UP)
     cmp rax, 1
     jne .L1
+    cmp dword[direction_y], -1
+    je .L1
     mov dword[direction_y],1
     mov dword[direction_x],0
 .L1:
     is_key_pressed(KEY_DOWN)
     cmp rax, 1
     jne .L2
+    cmp dword[direction_y], 1
+    je .L2
     mov dword[direction_y], -1
     mov dword[direction_x], 0
 .L2:
     is_key_pressed(KEY_LEFT)
     cmp rax, 1
     jne .L3
+    cmp dword[direction_x], 1
+    je .L3
     mov dword[direction_x], -1
     mov dword[direction_y], 0
 
@@ -279,10 +305,83 @@ UpdateDirection:
     is_key_pressed(KEY_RIGHT)
     cmp rax, 1
     jne .L4
+    cmp dword[direction_x], -1
+    je .L4
     mov dword[direction_x], 1
     mov dword[direction_y],0
 .L4:
     end 0
+
+CheckCollisionWithFood:
+    begin
+    mov rax, qword[head]
+    mov eax, dword[rax+Snake.x]
+    cmp eax, dword[food+Food.x]
+    jne .L1
+    mov rax, qword[head]
+    mov eax, dword[rax+Snake.y]
+    cmp eax, dword[food+Food.y]
+    jne .L1
+    end 1
+.L1:
+    end 0
+
+RandoMizeFood:
+    begin
+    push r15
+    push r14
+.L1
+    get_random_value(0, cell_count - 1)
+    mov r15d, eax
+    get_random_value(0, cell_count - 1)
+    mov r14d, eax
+
+    mov rdi, r15
+    mov rsi, r14
+
+    call FoodInBody
+    cmp rax, 1
+    je .L1
+
+    mov dword[food+Food.x], r15d
+    mov dword[food+Food.y], r14d
+    pop r14
+    pop r15
+    end 0
+
+;rdi
+;rsi
+FoodInBody:
+    begin
+    mov rax, qword[head]
+.L1
+    cmp dword[rax+Snake.x], edi
+    jne .L3
+    cmp dword[rax+Snake.y], esi
+    jne .L3
+    end 1
+.L3:
+    cmp qword[rax+Snake.nxt], 0
+    je .L4
+    mov rax, qword[rax+Snake.nxt]
+    jmp .L1
+.L4:
+    end 0
+
+CheckCollisionWithEdges:
+    begin
+    mov rax, qword[head]
+    cmp dword[rax+Snake.x], cell_count
+    je .L1
+    cmp dword[rax+Snake.x], -1
+    je .L1
+    cmp dword[rax+Snake.y], cell_count
+    je .L1
+    cmp dword[rax+Snake.y], -1
+    je .L1
+    end 0
+.L1
+    end 1
 
 section '.note.GNU-stack'
 
