@@ -278,9 +278,16 @@ txt_fmt: db "%i", 0
     call GetTime
 %endmacro
 
+%macro __is_key_pressed 1
+    mov rdi, %1
+    call IsKeyPressed
+%endmacro
+
 %define void 0
 %define KEY_DOWN 265
 %define KEY_UP 264
+%define KEY_LEFT 263
+%define KEY_RIGHT 262 
 
 %define init_window(a, b, c)        __init_window a, b, c
 %define close_window(a)             __close_window
@@ -305,6 +312,7 @@ txt_fmt: db "%i", 0
 %define mem_free(a)                 __mem_free a
 %define draw_rectangle_rounded(a,b,c,d,e,f,g) __draw_rec_round a,b,c,d,e,f,g
 %define get_time(a)                 __get_time
+%define is_key_pressed(a)           __is_key_pressed a
 
 extern InitWindow
 extern CloseWindow
@@ -330,6 +338,7 @@ extern MemAlloc
 extern MemFree
 extern DrawRectangleRounded
 extern GetTime
+extern IsKeyPressed
 
 ;If the size of the structure, in bytes, is ≤ 8, 
 ;then the the entire structure 

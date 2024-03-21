@@ -24,6 +24,9 @@ iend
 direction_x: dd 1
 direction_y: dd 0
 
+one: dd 1
+negone: dd -1
+
 
 section .bss
 food_image:   resd 6
@@ -77,6 +80,9 @@ _start:
     mov rdi, qword[head]
     call UpdateSnake
 .L1:
+
+    call UpdateDirection
+
     clear_background(dword[green])
 
     call DrawFood
@@ -251,7 +257,31 @@ EventTriggered:
 
 UpdateDirection:
     begin
-    
+    is_key_pressed(KEY_UP)
+    cmp rax, 1
+    jne .L1
+    mov dword[direction_y],1
+    mov dword[direction_x],0
+.L1:
+    is_key_pressed(KEY_DOWN)
+    cmp rax, 1
+    jne .L2
+    mov dword[direction_y], -1
+    mov dword[direction_x], 0
+.L2:
+    is_key_pressed(KEY_LEFT)
+    cmp rax, 1
+    jne .L3
+    mov dword[direction_x], -1
+    mov dword[direction_y], 0
+
+.L3:
+    is_key_pressed(KEY_RIGHT)
+    cmp rax, 1
+    jne .L4
+    mov dword[direction_x], 1
+    mov dword[direction_y],0
+.L4:
     end 0
 
 section '.note.GNU-stack'
