@@ -1,13 +1,14 @@
 %include "help.asm"
 
 section .data
-title: db "snake", 0
+title: db "Murimi's Snake", 0
 food_image_path: db "./screen.png", 0
 screen_height: equ 750
 screen_width:  equ 750
 
 green:      db 173, 204, 96, 255
 dark_green: db 43, 51, 24, 255
+box_green: db 150, 190, 80, 255
 pfmt: db "x = %d, y = %d",10, 0 
 
 last_update_time: dq 0.0
@@ -31,6 +32,8 @@ running: dd 1
 
 one: dd 1
 negone: dd -1
+
+offset: equ 75
 
 
 section .bss
@@ -59,7 +62,7 @@ _start:
 
     ;sys_exit(0)
 
-    init_window(cell_size*cell_count, cell_size*cell_count, title)
+    init_window(2*offset + cell_size*cell_count, 2*offset + cell_size*cell_count, title)
     set_target_fps(60)
 
     ;load_image(food_image_path, food_image)
@@ -77,7 +80,7 @@ _start:
     begin_drawing()
 
     cmp dword[running], 1
-    jne .L3
+    jne .L4
 
     call EventTriggered
     cmp rax, 1
@@ -103,14 +106,25 @@ _start:
     ;sys_exit(0)
 .L3:
 
+    call CheckCollisionWithTail
+    cmp rax, 1
+    jne .L4
+    call GameOver
+.L4:
+
     call UpdateDirection
 
     clear_background(dword[green])
-
+    draw_rectangle(offset - 5, offset -5, cell_size *cell_count +10, cell_size*cell_count+10, dword[box_green])
     call DrawFood
 
     mov rdi, qword[head]
     call DrawSnake
+
+    draw_text(title, offset-5, 20, 40, dword[dark_green])
+
+    text_fmt(dword[score])
+    draw_text(rax, offset-5, offset+cell_size*cell_count+10, 40, dword[dark_green])
 
 
     print_snake(qword[head])
@@ -131,7 +145,10 @@ DrawFood:
     mov rcx, rax
     mov eax, dword[food+Food.y]
     mul_i32(eax, cell_size)
-    draw_rectangle(ecx, eax, cell_size, cell_size, dword[dark_green])
+    add eax, offset
+    add ecx, offset
+    draw_rectangle(ecx, eax, cell_size, cell_size, 0xff0000ff)
+    ;dword[dark_green])
     ;draw_texture(food_texture, ecx, eax, 0xffffffff)
     end 0
 
@@ -166,7 +183,9 @@ DrawSnake:
 
     mov eax, cell_size
     push rcx
-    draw_rectangle_rounded(r15d, r14d, eax, eax, 0.5, 6, 0xffffffff)
+    add r15d, offset
+    add r14d, offset
+    draw_rectangle_rounded(r15d, r14d, eax, eax, 0.5, 6, dword[dark_green])
     pop rcx
     cmp qword[rcx+Snake.nxt], 0
     je .L2
@@ -380,6 +399,26 @@ FoodInBody:
 .L4:
     end 0
 
+CheckCollisionWithTail:
+    begin
+    mov rax, qword[head]
+    mov edi, dword[rax+Snake.x]
+    mov esi, dword[rax+Snake.y]
+    mov rax, qword[rax+Snake.nxt]
+.L1
+    cmp dword[rax+Snake.x], edi
+    jne .L3
+    cmp dword[rax+Snake.y], esi
+    jne .L3
+    end 1
+.L3:
+    cmp qword[rax+Snake.nxt], 0
+    je .L4
+    mov rax, qword[rax+Snake.nxt]
+    jmp .L1
+.L4:
+    end 0
+
 CheckCollisionWithEdges:
     begin
     mov rax, qword[head]
@@ -419,6 +458,7 @@ GameOver:
     call ResetSnake
     call RandoMizeFood
     mov dword[running], 0
+    mov dword[score], 0
     end 0
 
 section '.note.GNU-stack'

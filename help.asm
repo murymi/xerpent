@@ -168,7 +168,7 @@ endstruc
     mov rsi, %2
     mov rdx, %3
     mov rcx, %4
-    mov r8,  %5
+    mov r8d,  %5
     call DrawText
 %endmacro
 
