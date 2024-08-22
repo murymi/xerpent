@@ -209,22 +209,15 @@ txt_fmt: db "%i", 0
 
 %macro __draw_texture 4
     sub rsp, 32
-
     mov edi, %2
     mov esi, %3
     mov edx, %4
-
     mov rax, qword[%1]
     mov qword[rsp], rax
-
-
     mov rax, qword[%1+8]
     mov qword[rsp+8], rax
-
-
     mov eax, dword[%1+16]
     mov dword[rsp+16], eax
-
     call DrawTexture
     add rsp, 32
 %endmacro

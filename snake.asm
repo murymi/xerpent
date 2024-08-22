@@ -44,96 +44,69 @@ head: resq 1
 section .text
 global _start
 _start:
-
     create_snake(qword[head], 1, 1)
-
     push_back_snake(qword[head], 1, 2)
     push_back_snake(qword[head], 1, 3)
     push_back_snake(qword[head], 1, 4)
-
     pop_back_snake(qword[head])
-    ;pop_back_snake(qword[head])
-    ;pop_back_snake(qword[head])
-    ;pop_back_snake(qword[head])
-
-
-    ;push_front_snake(qword[head], 9, 3)
-
-
-    ;sys_exit(0)
-
     init_window(2*offset + cell_size*cell_count, 2*offset + cell_size*cell_count, title)
-    set_target_fps(60)
-
-    ;load_image(food_image_path, food_image)
-    ;load_texture_from_image(food_image, food_texture)
-
-    ;unload_image(food_image)
-
+    set_target_fps(120)
     call RandoMizeFood
-
 .gloop:
-
     window_should_close()
     cmp rax, 0
     jne .endgloop
     begin_drawing()
 
+    is_key_pressed(32)
+    cmp rax, 0
+    je .endpause
+    cmp dword[running], 1
+    je .pause
+    jmp .resume
+.pause
+    mov dword[running], 0
+    jmp .endpause
+.resume
+    mov dword[running], 1
+.endpause:
+
     cmp dword[running], 1
     jne .L4
-
     call EventTriggered
     cmp rax, 1
     jne .L1
     mov rdi, qword[head]
     call UpdateSnake
 .L1:
-
     call CheckCollisionWithFood
     cmp rax, 1
     jne .L2
     inc dword[score]
     call RandoMizeFood
     mov dword[add_segment], 1
-    ;push_back_snake(qword[head])
 .L2:
-
     call CheckCollisionWithEdges
     cmp rax, 1
     jne .L3
-
     call GameOver
-    ;sys_exit(0)
 .L3:
-
     call CheckCollisionWithTail
     cmp rax, 1
     jne .L4
     call GameOver
 .L4:
-
     call UpdateDirection
-
     clear_background(dword[green])
     draw_rectangle(offset - 5, offset -5, cell_size *cell_count +10, cell_size*cell_count+10, dword[box_green])
     call DrawFood
-
     mov rdi, qword[head]
     call DrawSnake
-
     draw_text(title, offset-5, 20, 40, dword[dark_green])
-
     text_fmt(dword[score])
     draw_text(rax, offset-5, offset+cell_size*cell_count+10, 40, dword[dark_green])
-
-
-    print_snake(qword[head])
-
-
-    ;sys_exit(1)
     end_drawing()
     jmp .gloop
-
 .endgloop:
     close_window()
     sys_exit(0)
@@ -148,10 +121,7 @@ DrawFood:
     add eax, offset
     add ecx, offset
     draw_rectangle(ecx, eax, cell_size, cell_size, 0xff0000ff)
-    ;dword[dark_green])
-    ;draw_texture(food_texture, ecx, eax, 0xffffffff)
     end 0
-
 
 InitBody:
     begin
@@ -165,7 +135,6 @@ InitBody:
     mov qword[rax+Snake.nxt], 0
     end rax
 
-;; rdi
 DrawSnake:
     begin
     mov rcx, rdi
@@ -180,7 +149,6 @@ DrawSnake:
     mov eax, dword[rcx+Snake.y]
     mul_i32(eax, cell_size)
     mov r14, rax
-
     mov eax, cell_size
     push rcx
     add r15d, offset
@@ -189,7 +157,6 @@ DrawSnake:
     pop rcx
     cmp qword[rcx+Snake.nxt], 0
     je .L2
-
     mov rcx, qword[rcx+Snake.nxt]
     jmp .L1
 .L2:
@@ -200,7 +167,7 @@ DrawSnake:
 
 PopBackSnake:
     begin
-    cmp rdi, 0 ;ptr
+    cmp rdi, 0
     je .Ext
     cmp qword[rdi+Snake.nxt], 0
     je .Ext
@@ -219,7 +186,6 @@ PopBackSnake:
 .Ext:
     end 0
 
-;; rdi
 PushBackSnake:
     begin
     cmp rdi, 0
@@ -264,9 +230,7 @@ PushFrontSnake:
     mov rdi, rsi
     mov rsi, rdx
     call InitBody 
-
     pop rdi
-
     mov qword[rax+Snake.nxt], rdi
     mov qword[head], rax
     end 0
@@ -274,7 +238,6 @@ PushFrontSnake:
 UpdateSnake:
     begin
     push rdi
-
     cmp dword[add_segment], 1
     jne .L1
     mov dword[add_segment], 0
@@ -366,22 +329,17 @@ RandoMizeFood:
     mov r15d, eax
     get_random_value(0, cell_count - 1)
     mov r14d, eax
-
     mov rdi, r15
     mov rsi, r14
-
     call FoodInBody
     cmp rax, 1
     je .L1
-
     mov dword[food+Food.x], r15d
     mov dword[food+Food.y], r14d
     pop r14
     pop r15
     end 0
 
-;rdi
-;rsi
 FoodInBody:
     begin
     mov rax, qword[head]
@@ -448,7 +406,6 @@ ResetSnake:
     mov dword[rax+Snake.y], 1
     push_back_snake(qword[head], 1, 2)
     push_back_snake(qword[head], 1, 3)
-
     mov dword[direction_x], 1
     mov dword[direction_y], 0
     end 0
